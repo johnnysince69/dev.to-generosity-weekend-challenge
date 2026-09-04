@@ -1,27 +1,21 @@
 import Link from 'next/link';
-import { Heart } from 'lucide-react';
 
 export default function Navbar() {
   return (
-    <nav className="border-b bg-white">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between h-16">
-          <div className="flex items-center">
-            <Link href="/" className="flex items-center">
-              <Heart className="h-8 w-8 text-rose-500" />
-              <span className="ml-2 text-xl font-bold text-gray-900">Aura</span>
-            </Link>
-          </div>
-          <div className="flex items-center space-x-4">
-            <Link href="/dashboard" className="text-gray-500 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium">
-              Transparency
-            </Link>
-            <Link href="/create" className="bg-rose-500 text-white hover:bg-rose-600 px-4 py-2 rounded-md text-sm font-medium transition-colors">
-              Start a Campaign
-            </Link>
-          </div>
-        </div>
+    <header className="fixed top-0 w-full bg-background/80 backdrop-blur-xl border-b border-white/20 shadow-[0_0_15px_rgba(255,177,196,0.1)] z-50 transition-all duration-300 hover:backdrop-blur-3xl">
+      <div className="flex justify-between items-center h-20 px-4 md:px-8 max-w-7xl mx-auto">
+        <Link href="/" className="flex items-center gap-2 group cursor-pointer active:scale-95 transition-transform">
+          <span className="material-symbols-outlined text-primary text-3xl" data-icon="bubble_chart">bubble_chart</span>
+          <span className="font-headline-md text-headline-md font-bold tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-primary via-secondary to-tertiary">AURA</span>
+        </Link>
+        <nav className="hidden md:flex gap-8">
+          <Link className="text-on-surface-variant font-body-md hover:text-tertiary transition-all duration-400" href="/create">Start Campaign</Link>
+          <Link className="text-on-surface-variant font-body-md hover:text-tertiary transition-all duration-400" href="/dashboard">Dashboard</Link>
+        </nav>
+        <button className="bg-surface/30 border border-tertiary/50 rounded-full px-6 py-3 font-button-text text-button-text text-tertiary hover:bg-tertiary/10 transition-all duration-400 active:scale-95 shadow-[0_0_10px_rgba(0,221,221,0.2)] hover:shadow-[0_0_20px_rgba(0,221,221,0.4)]">
+          Connect Wallet
+        </button>
       </div>
-    </nav>
+    </header>
   );
 }
