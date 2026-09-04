@@ -4,13 +4,12 @@ Aura is a decentralized platform that amplifies charitable causes through AI-enh
 
 ## Tech Stack & Integrations
 
-- **Google AI (Gemini):** Expands raw campaign notes into compelling, multi-lingual stories.
-- **ElevenLabs:** Generates high-quality, emotional audio voiceovers to make campaigns accessible.
-- **Solana:** Powers near-instant, transparent blockchain micro-donations (USDC/SOL).
+- **Google AI (Gemini):** Expands raw campaign notes into compelling, multi-lingual stories via server-side API routes.
+- **ElevenLabs:** Generates high-quality, emotional audio voiceovers to make campaigns accessible via server-side API routes.
+- **Solana Web3:** Connects real Solana wallets via `@solana/wallet-adapter` and powers transparent blockchain micro-donations directly from the UI.
 - **Snowflake:** Aggregates transparent analytics and global generosity trends.
-- **Next.js & Tailwind CSS:** Frontend application framework.
-
-*Note: For the scope of this hackathon, external services are simulated via mock API interfaces in `src/lib/mocks`.*
+- **Next.js & Tailwind CSS:** Frontend application framework using App Router.
+- **Prisma + SQLite:** Local database setup used to store campaign metadata and link transaction IDs.
 
 ## Detailed Workflow (How to use Aura)
 
@@ -28,8 +27,9 @@ Have a cause you care about but struggle to tell the story?
 Want to support a campaign transparently?
 - Browse the featured campaigns on the home page and click **"View details"**.
 - Read the AI-generated story or listen to the audio voiceover.
-- Enter the amount you wish to donate in USDC on the right side of the page.
-- Click **"Donate with Solana"**. This triggers a fast, low-fee blockchain transaction, ensuring your money goes directly to the cause.
+- Connect your Solana wallet (e.g. Phantom) via the navigation bar.
+- Enter the amount you wish to donate in SOL on the right side of the page.
+- Click **"Donate with Solana"**. This triggers a fast, low-fee blockchain transaction on the Devnet, ensuring your money goes directly to the cause.
 
 ### 3. Tracking Impact (For Everyone)
 Wondering how your generosity adds up globally?
@@ -38,11 +38,17 @@ Wondering how your generosity adds up globally?
 
 ## Local Development Setup
 
-If you want to run this project locally on your machine, follow these steps:
+If you want to run this project locally on your machine with full API capabilities, follow these steps:
 
 1. Clone the repository to your local machine.
 2. Install the required dependencies:
    \`npm install\`
-3. Run the development server:
+3. Rename \`.env.example\` to \`.env\` and add your API keys:
+   - \`GEMINI_API_KEY\`
+   - \`ELEVENLABS_API_KEY\`
+   - Snowflake connection details
+4. Push the database schema:
+   \`npx prisma db push\`
+5. Run the development server:
    \`npm run dev\`
-4. Open your web browser and go to http://localhost:3000 to see the app running.
+6. Open your web browser and go to http://localhost:3000 to see the app running.

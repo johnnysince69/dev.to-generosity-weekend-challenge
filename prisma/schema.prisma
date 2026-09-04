@@ -1,0 +1,26 @@
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Campaign {
+  id        String     @id @default(cuid())
+  title     String
+  story     String
+  audioUrl  String?
+  createdAt DateTime   @default(now())
+  donations Donation[]
+}
+
+model Donation {
+  id            String   @id @default(cuid())
+  amount        Float
+  transactionId String   @unique
+  campaignId    String
+  campaign      Campaign @relation(fields: [campaignId], references: [id])
+  createdAt     DateTime @default(now())
+}

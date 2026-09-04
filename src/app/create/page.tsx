@@ -2,7 +2,6 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { mockGoogleAI, mockElevenLabs } from '@/lib/mocks';
 import { Loader2 } from 'lucide-react';
 
 export default function CreateCampaign() {
@@ -11,6 +10,7 @@ export default function CreateCampaign() {
   const [title, setTitle] = useState('');
   const [isGeneratingStory, setIsGeneratingStory] = useState(false);
   const [isGeneratingAudio, setIsGeneratingAudio] = useState(false);
+  const [isPublishing, setIsPublishing] = useState(false);
   const [story, setStory] = useState('');
   const [audioUrl, setAudioUrl] = useState('');
 
@@ -18,8 +18,17 @@ export default function CreateCampaign() {
     if (!notes) return;
     setIsGeneratingStory(true);
     try {
-      const generatedStory = await mockGoogleAI.generateStory(notes);
-      setStory(generatedStory);
+      const res = await fetch('/api/ai/story', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ notes }),
+      });
+      const data = await res.json();
+      if (data.story) {
+        setStory(data.story);
+      } else {
+        alert(data.error || 'Failed to generate story');
+      }
     } catch (error) {
       console.error(error);
     } finally {
@@ -31,8 +40,17 @@ export default function CreateCampaign() {
     if (!story) return;
     setIsGeneratingAudio(true);
     try {
-      const generatedAudioUrl = await mockElevenLabs.generateAudio(story);
-      setAudioUrl(generatedAudioUrl);
+      const res = await fetch('/api/ai/audio', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: story }),
+      });
+      const data = await res.json();
+      if (data.audioUrl) {
+         setAudioUrl(data.audioUrl);
+      } else {
+         alert(data.error || 'Failed to generate audio');
+      }
     } catch (error) {
       console.error(error);
     } finally {
@@ -40,15 +58,29 @@ export default function CreateCampaign() {
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const newId = Math.floor(Math.random() * 1000).toString();
-    localStorage.setItem(`campaign_${newId}`, JSON.stringify({
-        title,
-        story,
-        audioUrl
-    }));
-    router.push(`/campaign/${newId}`);
+    if (!title || !story) return;
+
+    setIsPublishing(true);
+    try {
+        const res = await fetch('/api/campaigns', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ title, story, audioUrl }),
+        });
+        const campaign = await res.json();
+
+        if (campaign.id) {
+            router.push(`/campaign/${campaign.id}`);
+        } else {
+            alert(campaign.error || 'Failed to publish campaign');
+            setIsPublishing(false);
+        }
+    } catch (error) {
+        console.error(error);
+        setIsPublishing(false);
+    }
   };
 
   return (
@@ -71,7 +103,7 @@ export default function CreateCampaign() {
                 {/* Form Inputs Section */}
                 <section className="glass-panel p-6 md:p-8 rounded-2xl flex flex-col gap-6">
                     <div className="flex items-center gap-3 mb-2 border-b border-white/5 pb-4">
-                        <span className="material-symbols-outlined text-primary" data-icon="edit_document">edit_document</span>
+                        <span className="material-symbols-outlined text-primary">edit_document</span>
                         <h2 className="font-headline-md text-xl md:text-headline-md font-semibold text-on-surface">Campaign Details</h2>
                     </div>
 
@@ -108,7 +140,7 @@ export default function CreateCampaign() {
                         className="group relative flex items-center justify-center gap-3 w-full md:w-auto bg-surface-container border border-primary/40 rounded-full py-4 px-8 overflow-hidden hover:border-primary transition-colors disabled:opacity-50"
                     >
                         <div className="absolute inset-0 bg-gradient-to-r from-primary/10 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700"></div>
-                        {isGeneratingStory ? <Loader2 className="animate-spin text-primary" /> : <span className="material-symbols-outlined text-primary" data-icon="auto_awesome">auto_awesome</span>}
+                        {isGeneratingStory ? <Loader2 className="animate-spin text-primary" /> : <span className="material-symbols-outlined text-primary">auto_awesome</span>}
                         <span className="font-button-text text-button-text text-primary">Generate Story with Gemini</span>
                     </button>
                 </section>
@@ -138,14 +170,14 @@ export default function CreateCampaign() {
                               disabled={isGeneratingAudio}
                               className="group flex items-center justify-center gap-3 w-full md:w-auto bg-surface-container border border-secondary/40 rounded-full py-4 px-8 hover:border-secondary transition-colors disabled:opacity-50"
                           >
-                              {isGeneratingAudio ? <Loader2 className="animate-spin text-secondary" /> : <span className="material-symbols-outlined text-secondary" data-icon="graphic_eq">graphic_eq</span>}
+                              {isGeneratingAudio ? <Loader2 className="animate-spin text-secondary" /> : <span className="material-symbols-outlined text-secondary">graphic_eq</span>}
                               <span className="font-button-text text-button-text text-secondary">Generate Audio with ElevenLabs</span>
                           </button>
                       ) : (
                           <div className="glass-panel p-4 rounded-full flex items-center gap-4 w-full md:w-auto border-tertiary/30 shadow-[0_0_15px_rgba(0,221,221,0.1)]">
-                              <span className="material-symbols-outlined text-tertiary ml-2" data-icon="play_circle">play_circle</span>
+                              <span className="material-symbols-outlined text-tertiary ml-2">play_circle</span>
                               <span className="font-label-mono text-xs text-on-surface">Audio Ready. Check campaign page to play.</span>
-                              <span className="material-symbols-outlined text-tertiary/50 mr-2" data-icon="check_circle">check_circle</span>
+                              <span className="material-symbols-outlined text-tertiary/50 mr-2">check_circle</span>
                           </div>
                       )}
                   </section>
@@ -156,8 +188,10 @@ export default function CreateCampaign() {
                     <div className="pt-8 flex justify-center border-t border-white/5 animate-in fade-in duration-500 delay-300 fill-mode-both">
                         <button
                             type="submit"
-                            className="w-full bg-gradient-to-r from-primary to-secondary text-on-primary font-headline-md text-xl font-bold py-5 rounded-2xl shadow-[0_0_30px_rgba(255,177,196,0.2)] hover:shadow-[0_0_40px_rgba(236,177,255,0.4)] transition-all hover:-translate-y-1 active:translate-y-0"
+                            disabled={isPublishing}
+                            className="w-full flex justify-center items-center bg-gradient-to-r from-primary to-secondary text-on-primary font-headline-md text-xl font-bold py-5 rounded-2xl shadow-[0_0_30px_rgba(255,177,196,0.2)] hover:shadow-[0_0_40px_rgba(236,177,255,0.4)] transition-all hover:-translate-y-1 active:translate-y-0 disabled:opacity-50"
                         >
+                            {isPublishing ? <Loader2 className="animate-spin mr-2" /> : null}
                             Publish Campaign
                         </button>
                     </div>

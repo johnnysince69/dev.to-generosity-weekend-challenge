@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from 'react';
-import { mockSnowflake } from '@/lib/mocks';
 import { Loader2 } from 'lucide-react';
 
 interface GenerosityData {
@@ -19,7 +18,8 @@ export default function Dashboard() {
     let mounted = true;
     async function loadData() {
       try {
-        const result = await mockSnowflake.getGlobalGenerosityData();
+        const res = await fetch('/api/data/generosity');
+        const result = await res.json();
         if (mounted) {
            setData(result as GenerosityData);
         }
@@ -66,7 +66,7 @@ export default function Dashboard() {
             <div className="glass-panel p-8 rounded-2xl flex flex-col justify-between relative overflow-hidden group">
                 <div className="absolute right-0 bottom-0 w-32 h-32 bg-primary/20 rounded-full blur-2xl translate-x-1/2 translate-y-1/2 group-hover:bg-primary/30 transition-colors"></div>
                 <div className="flex items-center gap-3 mb-6">
-                    <span className="material-symbols-outlined text-primary" data-icon="public">public</span>
+                    <span className="material-symbols-outlined text-primary">public</span>
                     <h3 className="font-label-mono text-label-mono uppercase tracking-widest text-on-surface-variant">Total Global Donations</h3>
                 </div>
                 <div>
@@ -81,7 +81,7 @@ export default function Dashboard() {
             <div className="glass-panel p-8 rounded-2xl flex flex-col justify-between relative overflow-hidden group">
                 <div className="absolute right-0 bottom-0 w-32 h-32 bg-tertiary/20 rounded-full blur-2xl translate-x-1/2 translate-y-1/2 group-hover:bg-tertiary/30 transition-colors"></div>
                 <div className="flex items-center gap-3 mb-6">
-                    <span className="material-symbols-outlined text-tertiary" data-icon="campaign">campaign</span>
+                    <span className="material-symbols-outlined text-tertiary">campaign</span>
                     <h3 className="font-label-mono text-label-mono uppercase tracking-widest text-on-surface-variant">Active Campaigns</h3>
                 </div>
                 <div>

@@ -2,17 +2,12 @@
 
 import Link from 'next/link';
 import { useState } from 'react';
+import { useWallet } from '@solana/wallet-adapter-react';
+import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
 
 export default function Navbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [walletConnected, setWalletConnected] = useState(false);
-
-  const handleConnect = () => {
-    // Simulate wallet connection
-    setTimeout(() => {
-      setWalletConnected(true);
-    }, 500);
-  };
+  const { } = useWallet();
 
   return (
     <header className="fixed top-0 w-full bg-background/80 backdrop-blur-xl border-b border-white/20 shadow-[0_0_15px_rgba(255,177,196,0.1)] z-50 transition-all duration-300 hover:backdrop-blur-3xl">
@@ -27,30 +22,12 @@ export default function Navbar() {
           <Link className="text-on-surface-variant font-body-md hover:text-tertiary transition-all duration-400" href="/create">Start Campaign</Link>
           <Link className="text-on-surface-variant font-body-md hover:text-tertiary transition-all duration-400" href="/dashboard">Dashboard</Link>
 
-          {walletConnected ? (
-              <div className="flex items-center gap-2 bg-surface/50 border border-tertiary/30 rounded-full px-4 py-2 shadow-[0_0_10px_rgba(0,221,221,0.1)]">
-                 <span className="w-2 h-2 rounded-full bg-tertiary animate-pulse"></span>
-                 <span className="font-label-mono text-xs text-on-surface">0x7a...4fB2</span>
-              </div>
-          ) : (
-              <button onClick={handleConnect} className="bg-surface/30 border border-tertiary/50 rounded-full px-6 py-3 font-button-text text-button-text text-tertiary hover:bg-tertiary/10 transition-all duration-400 active:scale-95 shadow-[0_0_10px_rgba(0,221,221,0.2)] hover:shadow-[0_0_20px_rgba(0,221,221,0.4)]">
-                Connect Wallet
-              </button>
-          )}
+          <WalletMultiButton className="bg-surface/30 border border-tertiary/50 rounded-full px-6 py-3 font-button-text text-button-text text-tertiary hover:bg-tertiary/10 transition-all duration-400 active:scale-95 shadow-[0_0_10px_rgba(0,221,221,0.2)] hover:shadow-[0_0_20px_rgba(0,221,221,0.4)]" />
         </nav>
 
         {/* Mobile Menu Toggle */}
         <div className="md:hidden flex items-center gap-4">
-           {walletConnected ? (
-              <div className="flex items-center gap-2 bg-surface/50 border border-tertiary/30 rounded-full px-3 py-1.5 shadow-[0_0_10px_rgba(0,221,221,0.1)]">
-                 <span className="w-2 h-2 rounded-full bg-tertiary animate-pulse"></span>
-                 <span className="font-label-mono text-xs text-on-surface">0x7a..B2</span>
-              </div>
-           ) : (
-               <button onClick={handleConnect} className="text-tertiary text-sm border border-tertiary/50 rounded-full px-3 py-1.5">
-                   Connect
-               </button>
-           )}
+           <WalletMultiButton style={{ padding: '0 12px', height: '36px', fontSize: '12px' }} className="text-tertiary border border-tertiary/50 rounded-full" />
           <button onClick={() => setIsMenuOpen(!isMenuOpen)} className="text-on-surface">
             <span className="material-symbols-outlined">{isMenuOpen ? 'close' : 'menu'}</span>
           </button>

@@ -1,10 +1,12 @@
 "use client";
 
 import { useEffect, useState, use } from 'react';
-import { mockSolana } from '@/lib/mocks';
-import { Loader2, Heart, CheckCircle } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
+import { useConnection, useWallet } from '@solana/wallet-adapter-react';
+import { LAMPORTS_PER_SOL, PublicKey, SystemProgram, Transaction } from '@solana/web3.js';
 
 interface CampaignData {
+  id: string;
   title: string;
   story: string;
   audioUrl: string;
@@ -12,43 +14,71 @@ interface CampaignData {
 
 export default function CampaignDetail({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = use(params);
+  const { connection } = useConnection();
+  const { publicKey, sendTransaction } = useWallet();
 
   const [campaign, setCampaign] = useState<CampaignData | null>(null);
-  const [donationAmount, setDonationAmount] = useState('10');
+  const [donationAmount, setDonationAmount] = useState('0.1');
   const [isDonating, setIsDonating] = useState(false);
   const [donationSuccess, setDonationSuccess] = useState(false);
+  const [errorMsg, setErrorMsg] = useState('');
 
   useEffect(() => {
-    // Mock fetching campaign data from DB
-    const saved = localStorage.getItem(`campaign_${resolvedParams.id}`);
-
-    // Use a timeout or similar to move setState outside of synchronous effect flow if lint rules demand it,
-    // although for local storage a sync setState is often acceptable.
-    // Here we'll wrap it in a microtask.
-    Promise.resolve().then(() => {
-        if (saved) {
-          setCampaign(JSON.parse(saved));
-        } else {
-          // Fallback dummy data if not created locally
-          setCampaign({
-            title: "Support Local Education Initiatives",
-            story: "Education is the key to a better future. By supporting this campaign, you help provide resources to underfunded schools in our community. Every child deserves a chance to learn and thrive. Together, we can make this a reality.",
-            audioUrl: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3"
-          });
+    async function fetchCampaign() {
+      try {
+        const res = await fetch(`/api/campaigns/${resolvedParams.id}`);
+        if (res.ok) {
+           const data = await res.json();
+           setCampaign(data);
         }
-    });
+      } catch (error) {
+        console.error("Failed to fetch campaign", error);
+      }
+    }
+    fetchCampaign();
   }, [resolvedParams.id]);
 
   const handleDonate = async () => {
+    setErrorMsg('');
+    if (!publicKey) {
+        setErrorMsg('Please connect your wallet first');
+        return;
+    }
+
     setIsDonating(true);
     setDonationSuccess(false);
     try {
-      const res = await mockSolana.donate(Number(donationAmount), resolvedParams.id);
-      if (res.success) {
-        setDonationSuccess(true);
-      }
-    } catch (e) {
+      // Mock receiver address for the hackathon
+      const receiverPubKey = new PublicKey("11111111111111111111111111111111");
+
+      const transaction = new Transaction().add(
+          SystemProgram.transfer({
+              fromPubkey: publicKey,
+              toPubkey: receiverPubKey,
+              lamports: Number(donationAmount) * LAMPORTS_PER_SOL,
+          })
+      );
+
+      const signature = await sendTransaction(transaction, connection);
+
+      // Await confirmation
+      await connection.confirmTransaction(signature, 'processed');
+
+      // Record to DB
+      await fetch('/api/donations', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+              amount: Number(donationAmount),
+              transactionId: signature,
+              campaignId: resolvedParams.id
+          })
+      });
+
+      setDonationSuccess(true);
+    } catch (e: unknown) {
       console.error(e);
+      setErrorMsg((e as Error).message || 'Transaction failed');
     } finally {
       setIsDonating(false);
     }
@@ -87,35 +117,42 @@ export default function CampaignDetail({ params }: { params: Promise<{ id: strin
                    <h3 className="text-lg font-bold text-on-surface mb-4">Support this cause</h3>
                    <div className="space-y-4">
                       <div>
-                         <label className="block text-sm font-medium text-on-surface-variant mb-1">Amount (USDC)</label>
+                         <label className="block text-sm font-medium text-on-surface-variant mb-1">Amount (SOL)</label>
                          <div className="relative rounded-md shadow-sm">
                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                             <span className="text-on-surface-variant sm:text-sm">$</span>
+                             <span className="text-on-surface-variant sm:text-sm">◎</span>
                            </div>
                            <input
                              type="number"
                              value={donationAmount}
                              onChange={(e) => setDonationAmount(e.target.value)}
+                             step="0.01"
                              className="bg-surface/50 text-on-surface focus:ring-tertiary focus:border-tertiary block w-full pl-7 pr-12 sm:text-sm border-white/10 rounded-md py-2 px-3 border"
                              placeholder="0.00"
                            />
                             <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-                             <span className="text-on-surface-variant sm:text-sm">USDC</span>
+                             <span className="text-on-surface-variant sm:text-sm">SOL</span>
                            </div>
                          </div>
                       </div>
                       <button
                         onClick={handleDonate}
-                        disabled={isDonating || !donationAmount}
+                        disabled={isDonating || !donationAmount || !publicKey}
                         className="w-full flex justify-center items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-on-primary bg-gradient-to-r from-primary to-secondary hover:shadow-[0_0_20px_rgba(255,177,196,0.3)] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary disabled:opacity-50 transition-all"
                       >
-                        {isDonating ? <Loader2 className="animate-spin -ml-1 mr-2 h-5 w-5 text-on-primary" /> : <Heart className="mr-2 h-4 w-4" />}
-                        Donate with Solana
+                        {isDonating ? <Loader2 className="animate-spin -ml-1 mr-2 h-5 w-5 text-on-primary" /> : null}
+                        {!publicKey ? "Connect Wallet to Donate" : "Donate with Solana"}
                       </button>
+
+                      {errorMsg && (
+                          <div className="mt-4 p-3 bg-error/10 border border-error/20 rounded-md">
+                              <p className="text-sm text-error">{errorMsg}</p>
+                          </div>
+                      )}
 
                       {donationSuccess && (
                           <div className="mt-4 p-3 bg-tertiary/10 border border-tertiary/20 rounded-md flex items-start">
-                             <CheckCircle className="h-5 w-5 text-tertiary mr-2 flex-shrink-0" />
+                             <span className="material-symbols-outlined text-tertiary mr-2 flex-shrink-0">check_circle</span>
                              <p className="text-sm text-tertiary">Thank you! Your transaction is verified on the blockchain.</p>
                           </div>
                       )}
